@@ -1,0 +1,33 @@
+(*backtest
+start: 2018-05-01 00:00:00
+end: 2018-06-30 00:00:00
+period: 1h
+exchanges: [{"eid":"Futures_OKCoin","currency":"BTC_USD"}]
+args: [["ContractType","this_week",126961]]
+*)
+
+TPRICE:=(HIGH+LOW+OPEN+CLOSE)/4;
+AVGVALUE:=MA(TPRICE,N);
+//求最高价减去最低价，一个周期前的收盘价减去最高价的绝对值，一个周期前的收盘价减去最低价的绝对值，这三个值中的最大值
+// Find the maximum of these three values: highest price minus lowest price, the absolute value of (closing price a cycle ago minus the highest price）, the absolute value of （closing price a cycle ago minus the lowest price）
+
+TR:=MAX(MAX((HIGH-LOW),ABS(REF(CLOSE,1)-HIGH)),ABS(REF(CLOSE,1)-LOW));
+SHIFTVALUE:=MA(TR,N);                   // 求N个周期内的TR的简单移动平均
+                                        // Find the simple moving average of TR in N cycles
+UPPERBAND^^AVGVALUE + SHIFTVALUE;
+LOWERBAND^^AVGVALUE - SHIFTVALUE;
+STDS:STD(C,10);
+STDL:STD(C,60);
+
+BKVOL=0 AND HIGH >= UPPERBAND AND STDS>=STDL,BPK;
+SKVOL=0 AND LOW <= LOWERBAND AND  STDS>=STDL,SPK;
+BKVOL>0 AND BKHIGH-BKPRICE>=0.2*CLOSE AND C<LOWERBAND,SP;
+SKVOL>0 AND SKPRICE-SKLOW>=0.2*CLOSE AND C>UPPERBAND,BP;
+
+//止损
+//Stop loss
+
+C>=SKPRICE*(1+STOPRANGE*0.01),BP;
+C<=BKPRICE*(1-STOPRANGE*0.01),SP;
+
+AUTOFILTER;
